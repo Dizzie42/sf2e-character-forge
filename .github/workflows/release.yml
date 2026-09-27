@@ -1,0 +1,50 @@
+# Publishes a release: create a GitHub release with a tag like v1.0.1 and this workflow
+# fills in the version and URLs, builds the compendium, and attaches module.json + module.zip.
+name: Release
+
+on:
+  release:
+    types: [published]
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+
+      - name: Set version and URLs in module.json
+        env:
+          TAG: ${{ github.event.release.tag_name }}
+          REPO: ${{ github.repository }}
+        run: |
+          VERSION="${TAG#v}"
+          jq --arg v "$VERSION" \
+             --arg url "https://github.com/$REPO" \
+             --arg manifest "https://github.com/$REPO/releases/latest/download/module.json" \
+             --arg download "https://github.com/$REPO/releases/download/$TAG/module.zip" \
+             --arg bugs "https://github.com/$REPO/issues" \
+             --arg changelog "https://github.com/$REPO/blob/main/CHANGELOG.md" \
+             '.version=$v | .readme=($url + "/blob/main/README.md") | .url=$url | .manifest=$manifest | .download=$download | .bugs=$bugs | .changelog=$changelog' \
+             module.json > module.tmp && mv module.tmp module.json
+
+      - name: Build compendiums
+        run: |
+          npm install
+          npm run build:packs
+          rm -f packs/*/LOCK
+
+      - name: Zip the module
+        run: zip -r module.zip module.json README.md CHANGELOG.md LICENSE ORC_NOTICE.md scripts styles lang packs vendor
+
+      - uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            module.json
+            module.zip
