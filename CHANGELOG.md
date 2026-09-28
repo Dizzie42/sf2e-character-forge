@@ -12,6 +12,6 @@
 - Feat prerequisite checks with color coding. Feats you don't qualify for are hidden by default.
 - Expandable feat descriptions in every feat list.
 - Mixed heritages (Player Core pg. 83), plus optional homebrew ancestries and backgrounds that the GM can turn off.
-- Pathfinder Versatile Heritages (ORC) compendium: 11 remastered versatile heritages and their ancestry feats. The GM can turn it off.
+- Works with Pathfinder Anachronism: Pathfinder ancestries, classes and feats show up in the Forge when that module is on.
 - Text size control (A−/A+) for the Forge windows.
 - Drafts are saved between sessions.

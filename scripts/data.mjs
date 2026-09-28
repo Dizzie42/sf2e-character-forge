@@ -71,9 +71,7 @@ export class ForgeData {
     }
 
     async load(progress = () => {}) {
-        let showPF = true;
-        try { showPF = game.settings.get("sf2e-character-forge", "pathfinderHeritages") !== false; } catch (e) { /* ignore */ }
-        const packs = game.packs.filter((p) => p.documentName === "Item" && (p.visible ?? true) && (showPF || p.collection !== "sf2e-character-forge.pathfinder-heritages"));
+        const packs = game.packs.filter((p) => p.documentName === "Item" && (p.visible ?? true));
         // system packs first so their entries win name collisions
         packs.sort((a, b) => (b.metadata.packageName === game.system.id) - (a.metadata.packageName === game.system.id));
         this.packs = packs;

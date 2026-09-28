@@ -26,7 +26,7 @@ Everything comes from the compendiums you already have installed. The Forge does
 - **Choice prompts answered up front.** Things like "choose a skill" or "choose a weapon group" are asked inside the Forge, so the sheet doesn't throw a pile of dialogs at you afterwards.
 - **Custom options that follow the rules.** Build a *mixed heritage* (Player Core pg. 83) from any two ancestries.
 - **Optional homebrew.** Players can make their own ancestry or background, clearly marked as homebrew. The GM can turn this off.
-- **Pathfinder versatile heritages.** Nephilim, changeling, dhampir and eight more, from the remastered Pathfinder rules under the ORC license. The GM can turn them off.
+- **Pathfinder options too.** Turn on the official Pathfinder Anachronism module and its ancestries, classes and feats show up in the Forge alongside the Starfinder ones.
 - **Text size control.** Use the A− and A+ buttons to make everything bigger or smaller.
 - **Drafts are saved.** Close the window partway through and pick up where you left off.
 
@@ -104,7 +104,6 @@ Export works on any Starfinder 2e character, not only ones made with the Forge.
 
 | Setting | Scope | Default | What it does |
 | --- | --- | --- | --- |
-| Offer Pathfinder versatile heritages | World | On | Shows the 11 remastered Pathfinder versatile heritages and their feats in the Forge. |
 | Allow homebrew ancestries and backgrounds | World | On | Lets players build their own ancestry or background. Mixed heritages are an official rule, so they're always available. |
 | Forge text size | Client | 100% | Text size in the Forge windows. It's the same setting as the A−/A+ buttons. |
 
@@ -115,13 +114,11 @@ Starfinder 2e doesn't have official rules for designing a brand-new ancestry, so
 - **Rules-backed:** a **mixed heritage** combines the traits of two ancestries, as described on Player Core pg. 83. It's always available.
 - **Homebrew:** **custom ancestries** and **custom backgrounds**. They follow the same shape and budget as the official ones (HP, size, speed, boosts, a flaw, senses, languages), but they aren't official. They're tagged as homebrew wherever they appear, and the GM can turn them off in the settings.
 
-## Pathfinder versatile heritages
+## Pathfinder content
 
-The Starfinder GM Core lets GMs allow Pathfinder ancestries in their games. This module includes the **remastered versatile heritages** that are published under the ORC license, as a compendium called *Pathfinder Versatile Heritages (ORC)*:
+Starfinder 2e is built to work with Pathfinder 2e, and the GM can allow Pathfinder ancestries and other options at the table. To use them, install and turn on [Pathfinder Anachronism](https://foundryvtt.com/packages/pf2e-anachronism), the official module that adds Pathfinder 2e content to Starfinder 2e worlds. The Forge picks up its compendiums automatically, and the **Books** filter lets you show or hide them.
 
-Aiuvarin, Ardande, Changeling, Dhampir, Dragonblood, Dromaar, Duskwalker, Hungerseed, Nephilim, Oni and Talos, plus their ancestry feats.
-
-The compendium has the rules text only, with no setting lore or artwork. Where possible, the automation (darkvision, resistances, unarmed attacks and so on) uses the system's own rule elements. See [ORC_NOTICE.md](ORC_NOTICE.md) for sources and attribution.
+Pathfinder classes that don't cast spells work fully. Pathfinder spellcasters build fine, but the Forge's spell steps follow Starfinder's casters, so set up their spells on the sheet (see *Known limitations*).
 
 ## Feat prerequisites
 
@@ -135,8 +132,8 @@ Unmet feats are hidden by default. Click **Show all** above the list to see them
 
 ## Compatibility
 
-- **Foundry VTT:** v13
-- **System:** Starfinder Second Edition (`sf2e`) for Foundry v13
+- **Foundry VTT:** v13 and later
+- **System:** Starfinder Second Edition (`sf2e`)
 
 The Forge reads whatever compendiums are installed. Content from other modules, such as adventure or homebrew packs, shows up alongside the core books, and the **Books** filter lets you pick which books to use.
 
@@ -144,7 +141,7 @@ The Forge reads whatever compendiums are installed. Content from other modules, 
 
 - New characters can start at level 1 to 3. Imported characters can start at any level.
 - Hephaistos can't import files, so a Forge export can't go back into Hephaistos. It works with the Forge and Pathmuncher.
-- Spell choices cover spontaneous casters, which includes every Starfinder class at launch. Prepared casters from other content would need to prepare their spells on the sheet.
+- Spell steps follow Starfinder's spontaneous casters (mystic and witchwarper). Other casters, such as Pathfinder classes from Anachronism, build fine but need their spells set up on the sheet.
 - A few feats have prerequisites that can't be checked automatically. These are marked yellow.
 - English only for now. Translations are welcome.
 
@@ -177,16 +174,9 @@ forge.downloadPDF(actor);        // saves a PDF character sheet
 
 ## Building from source
 
-The compendium is stored as JSON in `src/packs/` and built into Foundry's database format during release.
+There's no build step. The module is plain JavaScript, so copy or symlink the repo into `Data/modules/sf2e-character-forge` and reload Foundry.
 
-```bash
-npm install
-npm run build:packs     # writes packs/pathfinder-heritages
-```
-
-Then copy or symlink the repo into `Data/modules/sf2e-character-forge`.
-
-To publish a release, create a GitHub release with a tag like `v1.0.1`. The workflow sets the version and URLs in `module.json`, builds the compendium, and attaches `module.json` and `module.zip` to the release.
+To publish a release, create a GitHub release with a tag like `v1.0.1`. The workflow sets the version and URLs in `module.json`, then attaches `module.json` and `module.zip` to the release.
 
 ## Support
 
@@ -195,7 +185,6 @@ The Forge is free and always will be. If it saved you an evening of character bu
 ## License and credits
 
 - **Code:** MIT License, see [LICENSE](LICENSE).
-- **Pathfinder versatile heritages compendium:** used under the ORC License, see [ORC_NOTICE.md](ORC_NOTICE.md).
 - **PDF export:** uses [jsPDF](https://github.com/parallax/jsPDF) (MIT License), included in `vendor/`.
 - The Forge reads Starfinder rules from the Starfinder 2e system's compendiums and doesn't redistribute them.
 - Hephaistos 2E is a separate project by its own authors. This module only reads the files it exports and isn't affiliated with it.

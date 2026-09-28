@@ -16,11 +16,6 @@ function openForge() {
 
 Hooks.once("init", () => {
     registerTextSize();
-    game.settings.register(MODULE_ID, "pathfinderHeritages", {
-        name: "SF2EFORGE.Settings.PathfinderHeritages.Name",
-        hint: "SF2EFORGE.Settings.PathfinderHeritages.Hint",
-        scope: "world", config: true, type: Boolean, default: true,
-    });
     game.settings.register(MODULE_ID, "allowHomebrew", {
         name: "SF2EFORGE.Settings.Homebrew.Name",
         hint: "SF2EFORGE.Settings.Homebrew.Hint",
@@ -44,7 +39,6 @@ Hooks.once("ready", () => {
         console.warn("Character Forge | This module needs the Starfinder Second Edition (sf2e) system. It won't run in this world.");
         return;
     }
-    registerPathfinderTraits();
     installChoiceSetHook();
     registerRelay();
 });
@@ -114,12 +108,3 @@ function markReady(app, html) {
 Hooks.on("renderActorSheet", markReady);
 Hooks.on("renderActorSheetV2", markReady);
 
-/* Make sure the Pathfinder heritage traits exist in this system's trait lists */
-function registerPathfinderTraits() {
-    const traits = { nephilim: "Nephilim", changeling: "Changeling", aiuvarin: "Aiuvarin", dromaar: "Dromaar", dhampir: "Dhampir", dragonblood: "Dragonblood", duskwalker: "Duskwalker", ardande: "Ardande", talos: "Talos", oni: "Oni", hungerseed: "Hungerseed", reflection: "Reflection", lineage: "Lineage" };
-    for (const key of ["ancestryTraits", "creatureTraits", "featTraits"]) {
-        const cfg = CONFIG.PF2E?.[key];
-        if (!cfg) continue;
-        for (const [slug, label] of Object.entries(traits)) if (!(slug in cfg)) cfg[slug] = label;
-    }
-}

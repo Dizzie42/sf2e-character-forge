@@ -1,8 +1,6 @@
 {
   "SF2EFORGE.Button.Open": "Character Forge",
   "SF2EFORGE.Button.LevelUp": "Level Up",
-  "SF2EFORGE.Settings.PathfinderHeritages.Name": "Offer Pathfinder versatile heritages",
-  "SF2EFORGE.Settings.PathfinderHeritages.Hint": "Adds the 11 remastered Pathfinder versatile heritages (nephilim, changeling, dhampir and more) and their feats to the Forge. The Starfinder GM Core (pg. 242) allows them with the GM's OK.",
   "SF2EFORGE.Settings.Homebrew.Name": "Allow homebrew ancestries and backgrounds",
   "SF2EFORGE.Settings.Homebrew.Hint": "Lets players make their own ancestry or background. These are homebrew, not official rules. Custom mixed heritages are an official rule and stay available either way.",
   "SF2EFORGE.Settings.TextScale.Name": "Forge text size",

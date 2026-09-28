@@ -1,11 +1,11 @@
 {
   "id": "sf2e-character-forge",
   "title": "Starfinder 2e Character Forge",
-  "description": "A guided character builder and level-up helper for the Starfinder Second Edition system. Walks players through ancestry, background, class, skills, feats, spells and gear step by step, then builds a ready-to-play character. Includes a Level Up button with undo, import from Hephaistos 2E, JSON and PDF export, rules-backed custom options, feat prerequisite checks, and the remastered Pathfinder versatile heritages (ORC).",
+  "description": "A guided character builder and level-up helper for the Starfinder Second Edition system. Walks players through ancestry, background, class, skills, feats, spells and gear step by step, then builds a ready-to-play character. Includes a Level Up button with undo, import from Hephaistos 2E, JSON and PDF export, rules-backed custom options and feat prerequisite checks.",
   "version": "1.0.0",
   "authors": [
     {
-      "name": "https://discord.com/users/dohrann"
+      "name": "Matt"
     }
   ],
   "url": "https://github.com/Dizzie42/sf2e-character-forge",
@@ -41,20 +41,6 @@
     }
   ],
   "socket": true,
-  "packs": [
-    {
-      "name": "pathfinder-heritages",
-      "label": "Pathfinder Versatile Heritages (ORC)",
-      "path": "packs/pathfinder-heritages",
-      "type": "Item",
-      "system": "sf2e",
-      "ownership": {
-        "PLAYER": "OBSERVER",
-        "ASSISTANT": "OWNER"
-      },
-      "flags": {}
-    }
-  ],
   "flags": {
     "sf2e-character-forge": {
       "donate": "https://ko-fi.com/dohrann"

@@ -1,5 +1,5 @@
 # Publishes a release: create a GitHub release with a tag like v1.0.1 and this workflow
-# fills in the version and URLs, builds the compendium, and attaches module.json + module.zip.
+# fills in the version and URLs and attaches module.json + module.zip.
 name: Release
 
 on:
@@ -13,11 +13,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
-        with:
-          node-version: 20
+      - uses: actions/checkout@v5
 
       - name: Set version and URLs in module.json
         env:
@@ -34,14 +30,8 @@ jobs:
              '.version=$v | .readme=($url + "/blob/main/README.md") | .url=$url | .manifest=$manifest | .download=$download | .bugs=$bugs | .changelog=$changelog' \
              module.json > module.tmp && mv module.tmp module.json
 
-      - name: Build compendiums
-        run: |
-          npm install
-          npm run build:packs
-          rm -f packs/*/LOCK
-
       - name: Zip the module
-        run: zip -r module.zip module.json README.md CHANGELOG.md LICENSE ORC_NOTICE.md scripts styles lang packs vendor
+        run: zip -r module.zip module.json README.md CHANGELOG.md LICENSE scripts styles lang vendor
 
       - uses: softprops/action-gh-release@v2
         with:
