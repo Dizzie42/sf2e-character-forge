@@ -15,3 +15,7 @@
 - Works with Pathfinder Anachronism: Pathfinder ancestries, classes and feats show up in the Forge when that module is on.
 - Text size control (A−/A+) for the Forge windows.
 - Drafts are saved between sessions.
+
+## 1.0.1
+
+   - Verified on Foundry v14 with the current Starfinder 2e system.
