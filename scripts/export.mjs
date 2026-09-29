@@ -48,6 +48,11 @@ function spellRank(s) {
     if ((s.system?.traits?.value ?? []).includes("cantrip")) return 0;
     return num(s.system?.location?.heightenedLevel ?? s.rank ?? s.system?.level?.value, 1);
 }
+/** Names of upgrades installed in an item (SF2e stores them as subitems) */
+function subNames(it) {
+    const subs = it.subitems?.contents ?? (Array.isArray(it.subitems) ? it.subitems : null) ?? it.system?.subitems ?? [];
+    return subs.map((x) => x?.name).filter(Boolean);
+}
 function credits(actor) {
     const c = actor.inventory?.currency ?? actor.inventory?.coins;
     if (c && typeof c.credits === "number") return c.credits;
@@ -128,11 +133,11 @@ export function exportBuild(actor) {
             if (type === "weapon") {
                 const strike = (sys.actions ?? []).find((a) => a.item?.id === it.id);
                 const dmg = it.system?.damage ?? {};
-                weapons.push({ name: it.name, qty, prof: it.system?.category ?? "simple", die: dmg.die ? `${dmg.dice ?? 1}${dmg.die}` : "", pot: 0, str: "", mat: null, display: it.name, runes: [],
+                weapons.push({ name: it.name, qty, prof: it.system?.category ?? "simple", die: dmg.die ? `${dmg.dice ?? 1}${dmg.die}` : "", pot: 0, str: "", mat: null, display: it.name, runes: subNames(it),
                     damageType: String(dmg.damageType ?? "").charAt(0).toUpperCase(), attack: num(strike?.totalModifier), damageBonus: 0, extraDamage: [], increasedDice: false, isInventor: false, grade: it.system?.grade ?? null });
             } else if (type === "armor" || type === "shield") {
                 armor.push({ name: it.name, qty, prof: type === "shield" ? "shield" : (it.system?.category ?? "light"), pot: 0, res: "", mat: null, display: it.name,
-                    worn: !!(it.isEquipped ?? it.system?.equipped?.inSlot), runes: [], grade: it.system?.grade ?? null });
+                    worn: !!(it.isEquipped ?? it.system?.equipped?.inSlot), runes: subNames(it), grade: it.system?.grade ?? null });
             } else {
                 const row = [it.name, qty];
                 if (it.isInvested ?? it.system?.equipped?.invested) row.push("Invested");
@@ -250,7 +255,7 @@ export async function sheetData(actor) {
     for (const type of ["armor", "shield", "weapon", "equipment", "consumable", "ammo", "backpack", "augmentation", "upgrade", "treasure"]) {
         for (const it of items(actor, type)) {
             if (type === "treasure" && (it.isCurrency || /credstick|^credits?$/i.test(it.name))) continue;
-            gear.push({ name: it.name, qty: num(it.system?.quantity, 1), worn: !!(it.isEquipped ?? it.system?.equipped?.inSlot) });
+            gear.push({ name: it.name + (subNames(it).length ? ` (+ ${subNames(it).join(", ")})` : ""), qty: num(it.system?.quantity, 1), worn: !!(it.isEquipped ?? it.system?.equipped?.inSlot) });
         }
     }
     const heritage = actor.heritage?.name;

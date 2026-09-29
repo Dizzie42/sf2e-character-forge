@@ -11,6 +11,12 @@ import { blankPlan, ctxFromCreator, deriveLevel, featSlotKeys, gainsAt, grantedS
 
 export const MAX_IMPORT_LEVEL = 20;
 
+/** Item grades by potency and striking/resilient step (as Pathmuncher reads them) */
+const GRADES = [
+    { type: "commercial", pot: 0, two: 0 }, { type: "tactical", pot: 1, two: 0 }, { type: "advanced", pot: 1, two: 1 },
+    { type: "superior", pot: 2, two: 1 }, { type: "elite", pot: 2, two: 2 }, { type: "ultimate", pot: 3, two: 2 }, { type: "paragon", pot: 3, two: 3 },
+];
+
 /* ---------------- name matching ---------------- */
 const norm = (s) => String(s ?? "").toLowerCase().replace(/\(.*?\)/g, " ").replace(/['’]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
 const normFull = (s) => String(s ?? "").toLowerCase().replace(/['’]/g, "").replace(/[^a-z0-9]+/g, " ").trim();
@@ -287,21 +293,42 @@ export async function importBuild(data, input, { source = "Hephaistos" } = {}) {
     const equip = (name) => findByName(data.equipment, name);
     let spent = 0;
     const cost = (uuid, q = 1) => { spent += priceCredits(data.entry(uuid)?.system?.price) * q; };
+    // Upgrades (force fields, weapon fusions...) come in each item's "runes" list; grade from "grade" or the potency numbers
+    const upgradesOf = (it, q = 1) => {
+        const out = [];
+        for (const nm of it.runes ?? []) {
+            if (!nm || typeof nm !== "string") continue;
+            const hit = equip(nm);
+            if (!hit) { miss("Upgrade", `${nm} (on ${it.name})`); continue; }
+            out.push(hit.uuid);
+            cost(hit.uuid, q);
+        }
+        return out;
+    };
+    const gradeOf = (it, kind) => {
+        if (typeof it.grade === "string" && it.grade) return it.grade.toLowerCase();
+        const pot = Number(it.pot) || 0;
+        const second = kind === "armor" ? ["", "resilient", "greater resilient", "major resilient"].indexOf(it.res ?? "") : ["", "striking", "greater striking", "major striking"].indexOf(it.str ?? "");
+        const hit = GRADES.find((g) => g.pot === pot && g.two === Math.max(0, second));
+        return hit && hit.type !== "commercial" ? hit.type : null;
+    };
     const armorList = (b.armor ?? []).filter((a) => a?.name);
     const worn = armorList.find((a) => a.worn && a.prof !== "shield") ?? armorList.find((a) => a.prof !== "shield");
     for (const a of armorList) {
         const hit = equip(a.display || a.name) ?? equip(a.name);
         if (!hit) { miss("Armor", a.name); continue; }
+        const up = upgradesOf(a, a.qty ?? 1);
+        const grade = gradeOf(a, "armor");
         if (hit.type === "shield" && !S.gear.shield) S.gear.shield = hit.uuid;
-        else if (a === worn && hit.type === "armor" && !S.gear.armor) S.gear.armor = hit.uuid;
-        else S.gear.items.push({ uuid: hit.uuid, q: a.qty ?? 1 });
+        else if (a === worn && hit.type === "armor" && !S.gear.armor) { S.gear.armor = hit.uuid; S.gear.armorUp = up; S.gear.armorGrade = grade; }
+        else S.gear.items.push({ uuid: hit.uuid, q: a.qty ?? 1, up, grade });
         cost(hit.uuid, a.qty ?? 1);
     }
     for (const w of b.weapons ?? []) {
         if (!w?.name || w.prof === "unarmed" || /^fist$/i.test(w.name)) continue;
         const hit = equip(w.display || w.name) ?? equip(w.name);
         if (!hit) { miss("Weapon", w.name); continue; }
-        S.gear.weapons.push({ uuid: hit.uuid, q: w.qty ?? 1 });
+        S.gear.weapons.push({ uuid: hit.uuid, q: w.qty ?? 1, up: upgradesOf(w, w.qty ?? 1), grade: gradeOf(w, "weapon") });
         cost(hit.uuid, w.qty ?? 1);
     }
     for (const e of b.equipment ?? []) {

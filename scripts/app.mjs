@@ -241,7 +241,7 @@ export class CharacterForgeApp extends ApplicationV2 {
             const chosen = n.options.find((o) => JSON.stringify(o.value) === JSON.stringify(ans));
             const chosenDoc = chosen?.uuid ? this.data.docCache.get(chosen.uuid) : null;
             return `<div class="slot">${head}<select ${lvl ? `data-lvl="${lvl}" data-lvanswer="${esc(n.key)}"` : `data-answer="${esc(n.key)}"`}><option value="">— choose —</option>${opts}</select>
-                ${chosenDoc ? `<details><summary>Read ${esc(chosenDoc.name)}</summary><div class="rules">${descHTML(chosenDoc.system?.description?.value)}</div></details>` : ""}</div>`;
+                ${chosenDoc ? `<details open><summary>Read ${esc(chosenDoc.name)}</summary><div class="rules">${descHTML(chosenDoc.system?.description?.value)}</div></details>` : ""}</div>`;
         }).join("")}</div>`;
     }
 
@@ -417,8 +417,10 @@ export class CharacterForgeApp extends ApplicationV2 {
     }
     vGear(D) {
         const S = this.S;
-        const lvlOk = (e) => this.prefs.highLevelGear || (e.system?.level?.value ?? 0) <= 1;
-        const eq = this.data.equipment.filter((e) => lvlOk(e) && this.visible(e));
+        const chosen = new Set([S.gear.armor, S.gear.shield].filter(Boolean));
+        const lvlOk = (e) => this.prefs.highLevelGear || chosen.has(e.uuid) || (e.system?.level?.value ?? 0) <= 1;
+        const eq = this.data.equipment.filter((e) => lvlOk(e) && this.visible(e, chosen.has(e.uuid)));
+        const extras = (up, grade) => { const names = (up ?? []).map((u) => this.data.entry(u)?.name).filter(Boolean); const bits = [grade ? `${grade} grade` : "", names.length ? `+ ${names.join(", ")}` : ""].filter(Boolean); return bits.length ? `<div class="note">${esc(bits.join(" · "))}</div>` : ""; };
         const cr = (e) => priceCredits(e.system?.price);
         const opt = (e) => `<option value="${esc(e.uuid)}">${esc(e.name)} · ${cr(e)} cr${e.system?.level?.value ? ` · lvl ${e.system.level.value}` : ""}</option>`;
         const byType = (t) => eq.filter((e) => e.type === t);
@@ -429,13 +431,13 @@ export class CharacterForgeApp extends ApplicationV2 {
         const wOpts = Object.entries(wGroups).sort().map(([g, ws]) => `<optgroup label="${esc(g)}">${ws.map(opt).join("")}</optgroup>`).join("");
         const gGroups = {};
         for (const g of eq.filter((e) => ["equipment", "consumable", "ammo", "backpack"].includes(e.type))) (gGroups[g.type] ??= []).push(g);
-        const gOpts = Object.entries(gGroups).map(([t, gs]) => `<optgroup label="${esc(t)}">${gs.map(opt).join("")}</optgroup>`).join("");
-        const row = (list, key) => list.map((it, i) => { const e = this.data.entry(it.uuid); if (!e) return ""; return `<tr><td><a data-open="${esc(e.uuid)}">${esc(e.name)}</a></td><td class="r"><input type="number" min="1" value="${it.q}" data-qty="${key}" data-i="${i}"></td><td class="r">${Math.round(cr(e) * it.q * 10) / 10}</td><td class="r"><button type="button" class="btn sm ghost" data-del="${key}" data-i="${i}">Remove</button></td></tr>`; }).join("");
+        const gOpts = Object.entries(gGroups).sort((a, b) => a[0].localeCompare(b[0])).map(([t, gs]) => `<optgroup label="${esc(t)}">${gs.map(opt).join("")}</optgroup>`).join("");
+        const row = (list, key) => list.map((it, i) => { const e = this.data.entry(it.uuid); if (!e) return ""; return `<tr><td><a data-open="${esc(e.uuid)}">${esc(e.name)}</a>${extras(it.up, it.grade)}</td><td class="r"><input type="number" min="1" value="${it.q}" data-qty="${key}" data-i="${i}"></td><td class="r">${Math.round(cr(e) * it.q * 10) / 10}</td><td class="r"><button type="button" class="btn sm ghost" data-del="${key}" data-i="${i}">Remove</button></td></tr>`; }).join("");
         return `<div class="panel"><div class="panel-head"><span class="eyebrow">Step 8</span><h2>Gear</h2><span class="tag ${D.credits < 0 ? "rare" : "acc"}">${D.credits} of ${D.startCredits} credits left</span><span class="tag">${D.bulk} / ${D.bulkLimit} Bulk</span></div>
             <p class="lede">A 1st-level character starts with 150 credits. When starting at a higher level, use what your GM allows. Whatever you don't spend goes on a credstick.</p>
             <div class="inline"><label for="startCredits">Starting credits</label><input type="number" id="startCredits" min="0" step="10" value="${D.startCredits}" data-credits="1" style="width:110px"></div>
             <label class="toggle"><input type="checkbox" data-pref="highLevelGear" ${this.prefs.highLevelGear ? "checked" : ""}> Show items above level 1</label>
-            <div class="grid2"><div class="field"><label>Armor (worn)</label><select data-gear="armor"><option value="">None</option>${armorOpts}</select></div>
+            <div class="grid2"><div class="field"><label>Armor (worn)</label><select data-gear="armor"><option value="">None</option>${armorOpts}</select>${S.gear.armor ? extras(S.gear.armorUp, S.gear.armorGrade) : ""}</div>
             <div class="field"><label>Shield</label><select data-gear="shield"><option value="">None</option>${shieldOpts}</select></div></div>
             <div class="sub-h">Weapons</div><div class="inline"><select id="addWeapon"><option value="">— add a weapon —</option>${wOpts}</select><button type="button" class="btn sm" data-add="weapons">Add</button></div>
             ${S.gear.weapons.length ? `<table class="inv"><tbody>${row(S.gear.weapons, "weapons")}</tbody></table>` : ""}
@@ -533,7 +535,7 @@ export class CharacterForgeApp extends ApplicationV2 {
         if (d.feat) return this.#update((S) => { S.feats[d.feat] = t.value; });
         if (d.answer) return this.#update((S) => { if (t.value === "") delete S.answers[d.answer]; else S.answers[d.answer] = JSON.parse(t.value); });
         if (d.spell) return this.#update((S) => { const arr = S.spells[d.spell]; S.spells[d.spell] = t.checked ? uniq([...arr, d.v]) : arr.filter((x) => x !== d.v); });
-        if (d.gear) return this.#update((S) => { S.gear[d.gear] = t.value; });
+        if (d.gear) return this.#update((S) => { S.gear[d.gear] = t.value; if (d.gear === "armor") { S.gear.armorUp = []; S.gear.armorGrade = null; } });
         if (d.qty) return this.#update((S) => { S.gear[d.qty][Number(d.i)].q = Math.max(1, parseInt(t.value) || 1); });
     }
 

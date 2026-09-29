@@ -169,23 +169,37 @@ export async function createCharacter(data, S, D, { ownerId = null } = {}) {
             }
         }
 
-        /* Equipment */
+        /* Equipment, with installed upgrades and grade */
         const gear = [];
+        const outfit = async (src, up, grade) => {
+            if (grade && src.system && "grade" in src.system) src.system.grade = grade;
+            if (up?.length) {
+                const subs = [];
+                for (const u of up) {
+                    const s = await sourceOf(data, u);
+                    s._id = foundry.utils.randomID();
+                    s.system.equipped = { ...(s.system.equipped ?? {}), carryType: "installed" };
+                    subs.push(s);
+                }
+                src.system.subitems = [...(src.system.subitems ?? []), ...subs];
+            }
+            return src;
+        };
         if (S.gear.armor) {
             const src = await sourceOf(data, S.gear.armor);
             src.system.equipped = { carryType: "worn", inSlot: true, handsHeld: 0 };
-            gear.push(src);
+            gear.push(await outfit(src, S.gear.armorUp, S.gear.armorGrade));
         }
         if (S.gear.shield) gear.push(await sourceOf(data, S.gear.shield));
-        for (const { uuid, q } of S.gear.weapons) {
+        for (const { uuid, q, up, grade } of S.gear.weapons) {
             const src = await sourceOf(data, uuid);
             src.system.quantity = q;
-            gear.push(src);
+            gear.push(await outfit(src, up, grade));
         }
-        for (const { uuid, q } of S.gear.items) {
+        for (const { uuid, q, up, grade } of S.gear.items) {
             const src = await sourceOf(data, uuid);
             src.system.quantity = q;
-            gear.push(src);
+            gear.push(await outfit(src, up, grade));
         }
         if (gear.length) await add(gear);
 

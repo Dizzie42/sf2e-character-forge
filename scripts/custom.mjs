@@ -8,7 +8,7 @@ import { ATTRS, ATTR_LABEL, sluggify } from "./data.mjs";
 
 export const MODULE_ID = "sf2e-character-forge";
 export const CUSTOM = { ancestry: "__custom-ancestry", heritage: "__mixed-heritage", background: "__custom-background" };
-export const CREATURE_TYPES = ["humanoid", "aberration", "animal", "beast", "construct", "dragon", "elemental", "fey", "fungus", "ooze", "plant", "undead"];
+export const CREATURE_TYPES = ["aberration", "animal", "beast", "construct", "dragon", "elemental", "fey", "fungus", "humanoid", "ooze", "plant", "undead"];
 const esc = (s) => String(s ?? "").replace(/[&<>"']/g, (c) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" })[c]);
 
 export function blankCustom() {
