@@ -247,7 +247,7 @@ export async function buildChoiceTree(data, roots, answers) {
             // Alphabetical, so long lists (skill feats, weapon groups...) are easy to scan
             if (Array.isArray(options)) options.sort((a, b) => String(a.label).localeCompare(String(b.label), undefined, { numeric: true, sensitivity: "base" }));
             const answer = answers[key];
-            nodes.push({ key, section, depth, via, itemName: doc.name, itemUuid: doc.uuid, flag, prompt: promptText(rule, flag), options, answer: answer ?? null });
+            nodes.push({ key, section, depth, via, itemName: doc.name, itemUuid: doc.uuid, flag, prompt: promptText(rule, flag), rawPrompt: String(rule.prompt ?? ""), options, answer: answer ?? null });
             if (answer !== undefined && answer !== null) flags[flag] = answer;
             if (typeof answer === "string" && /^Compendium\./.test(answer)) {
                 const child = await data.doc(answer);

@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.3
+
+- Import now fills in "choose a feat" prompts from the imported file, such as the skill feat an operative's Striker specialization grants. Feats already placed in a slot aren't reused, and a prompt that asks for a specific kind of feat ("Select a skill feat") gets matched first.
+- Choice prompts are only left for creation when the file doesn't say what was picked.
+
 ## 1.0.2
 
 - Fixed import dropping extra 1st-level feats (bonus ancestry, skill and general feats, such as from Ancestry Paragon). They now land in Bonus Feats.

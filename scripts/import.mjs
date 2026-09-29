@@ -187,26 +187,56 @@ export async function importBuild(data, input, { source = "Hephaistos" } = {}) {
     /* ---- choices (class paths, feat options): match against what the export lists ---- */
     const hints = new Set([...(b.specials ?? []), ...feats.map((f) => f[1]).filter(Boolean), ...feats.map((f) => f[0]), b.deity].filter(Boolean).map(norm));
     const featExtras = new Map(feats.filter((f) => f[1]).map((f) => [norm(f[0]), norm(f[1])]));
-    const pickAnswer = (node) => {
-        if (!node.options?.length) return undefined;
+    // Feats already sitting in a slot can't also be the answer to a "choose a feat" prompt
+    const nameOf = (u) => norm(data.entry(u)?.name);
+    const claimed = new Set([...[S.feats.anc, S.feats.cls, ...Object.values(S.levels).flatMap((pl) => Object.values(pl.feats))].filter(Boolean).map(nameOf), ...granted]);
+    const fromChoice = new Set();
+    const order = feats.map((f) => norm(f[0]));
+    const typeOf = new Map(feats.map((f) => [norm(f[0]), f[2]]));
+    const isFileFeat = (o) => order.includes(norm(o.label));
+    const commit = (o) => { const l = norm(o.label); if (order.includes(l)) { claimed.add(l); fromChoice.add(l); } return o.value; };
+    const wantKind = (node) => ["skill", "ancestry", "general", "class"].find((k) => new RegExp(`${k}.?feat`, "i").test(`${node.prompt} ${node.rawPrompt ?? ""} ${node.flag}`));
+    /** The best option for a choice, or null. Doesn't claim anything yet. */
+    const candidate = (node) => {
+        if (!node.options?.length) return null;
         const own = featExtras.get(norm(node.itemName));
-        const byLabel = (h) => node.options.filter((o) => norm(o.label) === h);
-        if (own) { const m = byLabel(own); if (m.length === 1) return m[0].value; }
+        if (own) { const m = node.options.filter((o) => norm(o.label) === own); if (m.length === 1) return m[0]; }
         const exact = node.options.filter((o) => hints.has(norm(o.label)));
-        if (exact.length === 1) return exact[0].value;
+        const open = exact.filter((o) => !claimed.has(norm(o.label)));
+        if (open.length === 1) return open[0];
+        if (open.length > 1) {
+            // Several feats from the file fit: prefer the kind being asked for ("Select a skill feat" -> a Skill Feat), then file order
+            const want = wantKind(node);
+            const kind = (o) => (want && String(typeOf.get(norm(o.label)) ?? "").toLowerCase().includes(want) ? 0 : 1);
+            return open.sort((a, c) => kind(a) - kind(c) || order.indexOf(norm(a.label)) - order.indexOf(norm(c.label)))[0];
+        }
+        if (exact.length === 1 && !isFileFeat(exact[0])) return exact[0];
         // "Healing" matching "Healing Connection" and the like
         const loose = node.options.filter((o) => { const l = norm(o.label); return l.length >= 4 && [...hints].some((h) => h.startsWith(l + " ") || h.endsWith(" " + l)); });
-        return loose.length === 1 ? loose[0].value : undefined;
+        return loose.length === 1 ? loose[0] : null;
     };
-    for (let pass = 0; pass < 5; pass++) {
-        D = await derive(data, S);
-        let changed = false;
-        for (const n of D.unanswered) {
-            const v = pickAnswer(n);
-            if (v !== undefined) { S.answers[n.key] = v; changed = true; }
+    /**
+     * Answer choices in rounds. In the first, careful round a feat from the file only goes to a prompt that says what kind
+     * of feat it wants ("Select a skill feat"), so vaguer prompts can't grab it first. The second round fills in the rest.
+     */
+    const answerAll = async (getNodes, store) => {
+        for (const careful of [true, false]) {
+            for (let pass = 0; pass < 6; pass++) {
+                const nodes = (await getNodes()).filter((n) => n.answer === null || n.answer === undefined);
+                let changed = false;
+                for (const n of nodes) {
+                    const o = candidate(n);
+                    if (!o) continue;
+                    if (careful && isFileFeat(o) && !wantKind(n)) continue;
+                    store(n.key, commit(o));
+                    changed = true;
+                }
+                if (!changed) break;
+            }
         }
-        if (!changed) break;
-    }
+    };
+    await answerAll(async () => { D = await derive(data, S); return D.unanswered; }, (k, v) => { S.answers[k] = v; });
+    D = await derive(data, S);
     granted = grantedNames();
     // Remove bonus feats that turned out to be granted once choices were made
     S.extra = S.extra.filter((u) => !granted.has(norm(data.entry(u)?.name)));
@@ -278,17 +308,11 @@ export async function importBuild(data, input, { source = "Hephaistos" } = {}) {
 
     /* ---- level choices (class features and feats at higher levels) ---- */
     for (let L = 2; L <= S.level; L++) {
-        for (let pass = 0; pass < 3; pass++) {
-            const LV = await deriveLevel(data, ctxFromCreator(data, S, D, L), S.levels[L]);
-            let changed = false;
-            for (const n of LV.choices) {
-                if (n.answer !== null) continue;
-                const v = pickAnswer(n);
-                if (v !== undefined) { S.levels[L].answers[n.key] = v; changed = true; }
-            }
-            if (!changed) break;
-        }
+        await answerAll(async () => (await deriveLevel(data, ctxFromCreator(data, S, D, L), S.levels[L])).choices, (k, v) => { S.levels[L].answers[k] = v; });
     }
+
+    // Bonus feats that a choice ended up granting (e.g. Ancestral Paragon's pick) don't need adding twice
+    S.extra = S.extra.filter((u) => !fromChoice.has(nameOf(u)));
 
     /* ---- gear and credits ---- */
     const equip = (name) => findByName(data.equipment, name);
