@@ -146,7 +146,9 @@ export async function importBuild(data, input, { source = "Hephaistos" } = {}) {
         ...D.visited.filter((v) => v.via).map((v) => norm(v.doc.name)),
         ...[cls, anc, bg].flatMap((d) => Object.values(d?.system?.items ?? {}).map((e) => norm(e.name))),
     ]);
-    const slotFor = { "ancestry feat": "ancestry", "class feat": "class", "archetype feat": "class", "skill feat": "skill", "general feat": "general" };
+    const slotFor = { "ancestry feat": "ancestry", "class feat": "class", "skill feat": "skill", "general feat": "general" };
+    // Feats added after leveling, then moved into any matching sheet slot (free archetype, ancestry paragon...) or Bonus Feats
+    S.late = [];
     const leftovers = [];
     let granted = grantedNames();
     for (const f of feats) {
@@ -156,6 +158,7 @@ export async function importBuild(data, input, { source = "Hephaistos" } = {}) {
         const doc = featDoc(name);
         if (!doc) { miss("Feat", extra ? `${name} (${extra})` : name); continue; }
         const slot = slotFor[String(type ?? "").toLowerCase()] ?? null;
+        if (/archetype/i.test(type ?? "")) { if (lvl <= S.level) { S.late.push({ uuid: doc.uuid, level: lvl }); placed.push(name); } continue; }
         if (lvl === 1) {
             if (slot === "ancestry" && !S.feats.anc) { S.feats.anc = doc.uuid; placed.push(name); continue; }
             if (slot === "class" && !S.feats.cls) { S.feats.cls = doc.uuid; placed.push(name); continue; }
@@ -167,6 +170,7 @@ export async function importBuild(data, input, { source = "Hephaistos" } = {}) {
         const keys = featSlotKeys(g);
         const plan = S.levels[lvl];
         if (slot && keys.includes(slot) && !plan.feats[slot]) { plan.feats[slot] = doc.uuid; placed.push(name); continue; }
+        if (!slot) { S.late.push({ uuid: doc.uuid, level: lvl }); placed.push(name); continue; }
         leftovers.push({ name, doc, lvl, extra });
     }
     // A feat whose level didn't have a matching slot: try any free slot of that kind at or after its level
@@ -181,7 +185,7 @@ export async function importBuild(data, input, { source = "Hephaistos" } = {}) {
                 if (fits) { S.levels[L].feats[k] = lf.doc.uuid; placed.push(lf.name); done = true; break; }
             }
         }
-        if (!done) notes.push(`${lf.name} (level ${lf.lvl}) didn't fit a feat slot. Add it on the character sheet after the character is built.`);
+        if (!done) { S.late.push({ uuid: lf.doc.uuid, level: lf.lvl }); placed.push(lf.name); }
     }
 
     /* ---- choices (class paths, feat options): match against what the export lists ---- */
@@ -313,6 +317,7 @@ export async function importBuild(data, input, { source = "Hephaistos" } = {}) {
 
     // Bonus feats that a choice ended up granting (e.g. Ancestral Paragon's pick) don't need adding twice
     S.extra = S.extra.filter((u) => !fromChoice.has(nameOf(u)));
+    S.late = S.late.filter((e) => !fromChoice.has(nameOf(e.uuid)) && !granted.has(nameOf(e.uuid)));
 
     /* ---- gear and credits ---- */
     const equip = (name) => findByName(data.equipment, name);

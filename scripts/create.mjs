@@ -1,4 +1,6 @@
 import { STARTING_CREDITS } from "./model.mjs";
+
+const MODULE_ID = "sf2e-character-forge";
 import { applyLevel } from "./levels.mjs";
 
 /** Answers the ChoiceSet hook should apply while the Forge is building an actor */
@@ -41,6 +43,34 @@ async function sourceOf(data, uuid) {
     if (!doc) throw new Error(`Could not load ${uuid}`);
     const src = game.items.fromCompendium(doc, { clearFolder: true });
     return src;
+}
+
+/**
+ * Move imported bonus feats into empty sheet slots that accept them: free archetype, ancestry paragon, or any other
+ * slotted group a variant rule or module adds. Whatever doesn't fit stays under Bonus Feats.
+ */
+export async function slotBonusFeats(actor) {
+    const groupsNow = () => (actor.feats ? [...(actor.feats.contents ?? actor.feats.values?.() ?? actor.feats)] : []);
+    if (!groupsNow().length) return;
+    const pending = (actor.itemTypes?.feat ?? []).filter((f) => f.flags?.[MODULE_ID]?.autoSlot && !f.system?.location)
+        .sort((a, b) => (a.system?.level?.taken ?? 1) - (b.system?.level?.taken ?? 1));
+    for (const feat of pending) {
+        // re-read the groups each time: filling a slot rebuilds them
+        for (const g of groupsNow()) {
+            if (!g?.slotted || ["bonus", "classfeature"].includes(g.id)) continue;
+            try {
+                if (!g.isFeatValid(feat)) continue;
+                const traits = g.filter?.traits ?? [];
+                if (traits.length && !traits.some((t) => feat.traits?.has?.(t) ?? (feat.system?.traits?.value ?? []).includes(t))) continue;
+                const need = feat.system?.level?.value ?? 1;
+                const slot = Object.values(g.slots ?? {}).filter((s) => s && !s.feat && (s.level ?? need) >= need && (s.level ?? 0) <= actor.level)
+                    .sort((a, b) => (a.level ?? 0) - (b.level ?? 0))[0];
+                if (!slot) continue;
+                await g.insertFeat(feat, slot.id);
+                break;
+            } catch (err) { console.warn("Character Forge | couldn't slot", feat.name, err); }
+        }
+    }
 }
 
 export async function createCharacter(data, S, D, { ownerId = null } = {}) {
@@ -124,6 +154,7 @@ export async function createCharacter(data, S, D, { ownerId = null } = {}) {
         for (const uuid of S.extra) {
             const src = await sourceOf(data, uuid);
             src.system.location = null;
+            if (S.imported) ((src.flags ??= {})[MODULE_ID] ??= {}).autoSlot = true;
             await add(src);
         }
 
@@ -229,6 +260,22 @@ export async function createCharacter(data, S, D, { ownerId = null } = {}) {
         FORGE_RUN.answers = { ...S.answers };
         await applyLevel(data, actor, plan);
     }
+    /* Imported feats that aren't in a normal slot (free archetype, ancestry paragon, awarded at higher levels) */
+    if (S.imported && S.late?.length) {
+        const late = [];
+        for (const { uuid, level } of S.late) {
+            try {
+                const src = await sourceOf(data, uuid);
+                src.system.location = null;
+                src.system.level = { ...(src.system.level ?? {}), taken: level };
+                ((src.flags ??= {})[MODULE_ID] ??= {}).autoSlot = true;
+                late.push(src);
+            } catch (err) { console.warn("Character Forge | skipped feat", uuid, err); }
+        }
+        if (late.length) await actor.createEmbeddedDocuments("Item", late);
+    }
+    if (S.imported) await slotBonusFeats(actor);
+
     if (target > 1) {
         const max = actor.system.attributes?.hp?.max;
         if (typeof max === "number" && max > 0) await actor.update({ "system.attributes.hp.value": max });

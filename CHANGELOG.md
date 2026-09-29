@@ -1,5 +1,10 @@
 # Changelog
 
+## 1.0.4
+
+- Imported feats that belong in variant-rule slots now go there automatically: free archetype feats into Archetype Feats, extra ancestry feats into Ancestry Paragon Feats, and so on for any slotted feat section your system or modules add. Anything with no matching slot lands in Bonus Feats.
+- Imported feats at higher levels that don't fit a normal slot are now added instead of only being listed in the notes.
+
 ## 1.0.3
 
 - Import now fills in "choose a feat" prompts from the imported file, such as the skill feat an operative's Striker specialization grants. Feats already placed in a slot aren't reused, and a prompt that asks for a specific kind of feat ("Select a skill feat") gets matched first.
