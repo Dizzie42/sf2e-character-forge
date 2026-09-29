@@ -1,5 +1,14 @@
 # Changelog
 
+## 1.0.2
+
+- Fixed import dropping extra 1st-level feats (bonus ancestry, skill and general feats, such as from Ancestry Paragon). They now land in Bonus Feats.
+- Import now brings in armor and weapon upgrades (like a Force Field on Hardlight Series armor) and installs them, along with the item's grade.
+- Export includes installed upgrades, so they survive a round trip.
+- Imported high-level armor now shows correctly on the Gear step.
+- Choice dropdowns (skill feats, specializations, weapon groups and so on) are now alphabetical, and so are the equipment groups and creature types.
+- After you make a choice, its description now stays open, so you can compare options as you switch between them.
+
 ## 1.0.0 - First public release
 
 - Step-by-step character creation for Starfinder 2e: ancestry, heritage, background, class, attribute boosts, skills, feats, spells, gear and details.

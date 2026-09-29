@@ -140,10 +140,10 @@ export async function derive(data, S) {
     /* ---- gear ---- */
     let spent = 0, bulk = 0;
     const line = (uuid, q = 1) => { const e = data.entry(uuid); if (!e) return; spent += priceCredits(e.system?.price) * q; bulk += bulkValue(e.system?.bulk) * q; };
-    if (S.gear.armor) line(S.gear.armor);
+    if (S.gear.armor) { line(S.gear.armor); for (const u of S.gear.armorUp ?? []) line(u); }
     if (S.gear.shield) line(S.gear.shield);
-    for (const w of S.gear.weapons) line(w.uuid, w.q);
-    for (const i of S.gear.items) line(i.uuid, i.q);
+    for (const w of S.gear.weapons) { line(w.uuid, w.q); for (const u of w.up ?? []) line(u, w.q); }
+    for (const i of S.gear.items) { line(i.uuid, i.q); for (const u of i.up ?? []) line(u, i.q); }
     D.spent = Math.round(spent * 10) / 10;
     D.startCredits = Number.isFinite(Number(S.startCredits)) ? Number(S.startCredits) : STARTING_CREDITS;
     D.credits = Math.round((D.startCredits - spent) * 10) / 10;
